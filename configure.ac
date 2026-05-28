@@ -76,9 +76,34 @@ have_libprofiler=no
 LIBPROFILER_CXXFLAGS=""
 LIBPROFILER_LIBS="-lprofiler"
 
+AC_ARG_WITH([gperftools],
+            [AS_HELP_STRING([--with-gperftools=PATH],
+                            [path to a local gperftools build/install prefix])],
+            [GPERFTOOLS_PATH="$withval"],
+            [GPERFTOOLS_PATH=""])
+
+if test -z "${GPERFTOOLS_PATH}" && test -d "${HOME}/gperftools"; then
+  GPERFTOOLS_PATH="${HOME}/gperftools"
+fi
+
+if test -n "${GPERFTOOLS_PATH}"; then
+  AC_MSG_CHECKING([for local gperftools in ${GPERFTOOLS_PATH}])
+  if test -f "${GPERFTOOLS_PATH}/.libs/libprofiler.a" ||
+     test -f "${GPERFTOOLS_PATH}/.libs/libprofiler.dylib" ||
+     test -f "${GPERFTOOLS_PATH}/.libs/libprofiler.0.dylib"; then
+    have_libprofiler=yes
+    LIBPROFILER_CXXFLAGS="-I${GPERFTOOLS_PATH}/src"
+    LIBPROFILER_LIBS="-L${GPERFTOOLS_PATH}/.libs -lprofiler"
+    LIBPROFILER_LIBS="${LIBPROFILER_LIBS} -Wl,-rpath,${GPERFTOOLS_PATH}/.libs"
+    AC_MSG_RESULT([yes])
+  else
+    AC_MSG_RESULT([no])
+  fi
+fi
+
 PKG_PROG_PKG_CONFIG
 
-if test [ -n "$PKG_CONFIG" ] ; then
+if test "x${have_libprofiler}" = xno && test [ -n "$PKG_CONFIG" ] ; then
   AC_MSG_CHECKING([pkg-config for libprofiler])
   if $PKG_CONFIG --exists libprofiler; then
     have_libprofiler=yes
