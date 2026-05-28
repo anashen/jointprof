@@ -2,10 +2,15 @@ combine_profiles <- function(prof_path, out_path) {
   ds_rprof <- profile::read_rprof(out_path, version = "1.0")
 
   proto_path <- tempfile("jointprof", fileext = ".pb.gz")
-  system2(
+  status <- system2(
     find_pprof(),
-    c("-proto", "-output", shQuote(proto_path), shQuote(prof_path))
+    c("-proto", "-output", shQuote(proto_path), shQuote(prof_path)),
+    stdout = FALSE,
+    stderr = FALSE
   )
+  if (!identical(status, 0L)) {
+    stop("`pprof` failed while converting native profile data.", call. = FALSE)
+  }
   ds_pprof <- profile::read_pprof(proto_path, version = "1.0")
 
   stopifnot(sum(ds_pprof$samples$value) == sum(ds_rprof$samples$value))
