@@ -13,7 +13,7 @@
 #'
 #' @export
 find_pprof <- function() {
-  path <- proffer::pprof_path()
+  path <- suppressWarnings(suppressMessages(proffer::pprof_path()))
   if (!file.exists(path)) {
     stop("Can't find `pprof`. See `?proffer::pprof_path` for installation instructions.", call. = FALSE)
   }
