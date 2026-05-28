@@ -68,6 +68,10 @@
 typedef ucontext ucontext_t;
 #endif
 
+#if defined(__APPLE__) && (defined(__aarch64__) || defined(__arm64__))
+#include <mach/arm/thread_status.h>
+#endif
+
 
 // Take the example where function Foo() calls function Bar().  For
 // many architectures, Bar() is responsible for setting up and tearing
@@ -174,6 +178,18 @@ typedef int ucontext_t;
 inline void* GetPC(const struct ucontext_t& signal_ucontext) {
   RAW_LOG(ERROR, "GetPC is not yet implemented on Windows\n");
   return NULL;
+}
+
+// Special case #3: macOS arm64, where modern SDKs use an arm thread-state
+// layout that the legacy configure probe cannot express via PC_FROM_UCONTEXT.
+#elif defined(__APPLE__) && (defined(__aarch64__) || defined(__arm64__))
+inline void* GetPC(const ucontext_t& signal_ucontext) {
+#if defined(__DARWIN_OPAQUE_ARM_THREAD_STATE64) && __DARWIN_OPAQUE_ARM_THREAD_STATE64
+  return reinterpret_cast<void*>(
+      __darwin_arm_thread_state64_get_pc(signal_ucontext.uc_mcontext->__ss));
+#else
+  return reinterpret_cast<void*>(signal_ucontext.uc_mcontext->__ss.__pc);
+#endif
 }
 
 // Normal cases.  If this doesn't compile, it's probably because
